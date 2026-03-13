@@ -9,19 +9,21 @@ export default function InvestigationDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const investigation = id ? getInvestigationById(id) : undefined;
+const foundInvestigation = id ? getInvestigationById(id) : undefined;
 
-  if (!investigation) {
-    return (
-      <section className="empty-state">
-        <h2>Investigation not found</h2>
-        <p>The case file may have been removed or never saved.</p>
-        <Link className="secondary-btn" to="/">
-          Back to Dashboard
-        </Link>
-      </section>
-    );
-  }
+if (!foundInvestigation) {
+  return (
+    <section className="empty-state">
+      <h2>Investigation not found</h2>
+      <p>The case file may have been removed or never saved.</p>
+      <Link className="secondary-btn" to="/">
+        Back to Dashboard
+      </Link>
+    </section>
+  );
+}
+
+const investigation = foundInvestigation;
 
   function handleDelete() {
     const confirmed = window.confirm(

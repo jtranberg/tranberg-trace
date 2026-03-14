@@ -1,59 +1,172 @@
 import type { TraceInvestigation } from "../types/trace";
 
-const STORAGE_KEY = "tranberg-trace-investigations";
+const API_BASE =
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") ||
+  "http://localhost:5000";
 
-export function loadInvestigations(): TraceInvestigation[] {
+function emptyTech() {
+  return {
+    techId: "",
+    techName: "",
+  };
+}
+
+function normalizeInvestigation(
+  raw: Partial<TraceInvestigation> & { _id?: string }
+): TraceInvestigation {
+  const now = new Date().toISOString();
+
+  return {
+    id: raw.id ?? raw._id ?? crypto.randomUUID(),
+    title: raw.title ?? "",
+    description: raw.description ?? "",
+    status: raw.status ?? "open",
+    severity: raw.severity ?? "medium",
+    layer: raw.layer ?? "unknown",
+    environment: raw.environment ?? "local",
+    tags: Array.isArray(raw.tags) ? raw.tags : [],
+
+    reportedBy: raw.reportedBy ?? emptyTech(),
+    openedBy: raw.openedBy ?? emptyTech(),
+
+    trigger: {
+      owner: raw.trigger?.owner ?? emptyTech(),
+      stepsToReproduce: raw.trigger?.stepsToReproduce ?? "",
+      expectedBehavior: raw.trigger?.expectedBehavior ?? "",
+      actualBehavior: raw.trigger?.actualBehavior ?? "",
+    },
+    reduce: {
+      owner: raw.reduce?.owner ?? emptyTech(),
+      suspectedLayer: raw.reduce?.suspectedLayer ?? "",
+      scopeNotes: raw.reduce?.scopeNotes ?? "",
+    },
+    analyze: {
+      owner: raw.analyze?.owner ?? emptyTech(),
+      logs: raw.analyze?.logs ?? "",
+      telemetry: raw.analyze?.telemetry ?? "",
+      observedErrors: raw.analyze?.observedErrors ?? "",
+    },
+    challenge: {
+      owner: raw.challenge?.owner ?? emptyTech(),
+      hypotheses: raw.challenge?.hypotheses ?? "",
+      experiments: raw.challenge?.experiments ?? "",
+      findings: raw.challenge?.findings ?? "",
+    },
+    eliminate: {
+      owner: raw.eliminate?.owner ?? emptyTech(),
+      rootCause: raw.eliminate?.rootCause ?? "",
+      fixApplied: raw.eliminate?.fixApplied ?? "",
+      safeguards: raw.eliminate?.safeguards ?? "",
+      followUp: raw.eliminate?.followUp ?? "",
+    },
+
+    createdAt: raw.createdAt ?? now,
+    updatedAt: raw.updatedAt ?? now,
+  };
+}
+
+function toApiPayload(item: TraceInvestigation) {
+  return {
+    title: item.title,
+    description: item.description,
+    status: item.status,
+    severity: item.severity,
+    layer: item.layer,
+    environment: item.environment,
+    tags: item.tags,
+
+    reportedBy: item.reportedBy,
+    openedBy: item.openedBy,
+
+    trigger: item.trigger,
+    reduce: item.reduce,
+    analyze: item.analyze,
+    challenge: item.challenge,
+    eliminate: item.eliminate,
+  };
+}
+
+async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(options?.headers || {}),
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `API request failed (${response.status}): ${text || response.statusText}`
+    );
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export async function loadInvestigations(): Promise<TraceInvestigation[]> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as TraceInvestigation[];
-    return Array.isArray(parsed) ? parsed : [];
+    const data = await apiFetch<Array<Partial<TraceInvestigation> & { _id?: string }>>(
+      "/api/investigations"
+    );
+    return data.map(normalizeInvestigation);
   } catch (error) {
-    console.error("Failed to load investigations from storage:", error);
+    console.error("Failed to load investigations from API:", error);
     return [];
   }
 }
 
-export function saveInvestigations(items: TraceInvestigation[]): void {
+export async function getInvestigationById(
+  id: string
+): Promise<TraceInvestigation | undefined> {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    const data = await apiFetch<Partial<TraceInvestigation> & { _id?: string }>(
+      `/api/investigations/${id}`
+    );
+    return normalizeInvestigation(data);
   } catch (error) {
-    console.error("Failed to save investigations to storage:", error);
+    console.error(`Failed to load investigation ${id}:`, error);
+    return undefined;
   }
 }
 
-export function getInvestigationById(
-  id: string
-): TraceInvestigation | undefined {
-  return loadInvestigations().find((item) => item.id === id);
-}
-
-export function createInvestigation(item: TraceInvestigation): void {
-  const existing = loadInvestigations();
-  saveInvestigations([item, ...existing]);
-}
-
-export function updateInvestigation(updated: TraceInvestigation): void {
-  const existing = loadInvestigations();
-  const next = existing.map((item) =>
-    item.id === updated.id ? updated : item
+export async function createInvestigation(
+  item: TraceInvestigation
+): Promise<TraceInvestigation> {
+  const data = await apiFetch<Partial<TraceInvestigation> & { _id?: string }>(
+    "/api/investigations",
+    {
+      method: "POST",
+      body: JSON.stringify(toApiPayload(item)),
+    }
   );
-  saveInvestigations(next);
+
+  return normalizeInvestigation(data);
 }
 
-export function deleteInvestigation(id: string): void {
-  const existing = loadInvestigations();
-  const next = existing.filter((item) => item.id !== id);
-  saveInvestigations(next);
+export async function updateInvestigation(
+  updated: TraceInvestigation
+): Promise<TraceInvestigation> {
+  const data = await apiFetch<Partial<TraceInvestigation> & { _id?: string }>(
+    `/api/investigations/${updated.id}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(toApiPayload(updated)),
+    }
+  );
+
+  return normalizeInvestigation(data);
+}
+
+export async function deleteInvestigation(id: string): Promise<void> {
+  await apiFetch(`/api/investigations/${id}`, {
+    method: "DELETE",
+  });
 }
 
 export function createEmptyInvestigation(): TraceInvestigation {
   const now = new Date().toISOString();
-
-  const emptyTech = {
-    techId: "",
-    techName: "",
-  };
 
   return {
     id: crypto.randomUUID(),
@@ -65,34 +178,34 @@ export function createEmptyInvestigation(): TraceInvestigation {
     environment: "local",
     tags: [],
 
-    reportedBy: { ...emptyTech },
-    openedBy: { ...emptyTech },
+    reportedBy: emptyTech(),
+    openedBy: emptyTech(),
 
     trigger: {
-      owner: { ...emptyTech },
+      owner: emptyTech(),
       stepsToReproduce: "",
       expectedBehavior: "",
       actualBehavior: "",
     },
     reduce: {
-      owner: { ...emptyTech },
+      owner: emptyTech(),
       suspectedLayer: "",
       scopeNotes: "",
     },
     analyze: {
-      owner: { ...emptyTech },
+      owner: emptyTech(),
       logs: "",
       telemetry: "",
-      errors: "",
+      observedErrors: "",
     },
     challenge: {
-      owner: { ...emptyTech },
+      owner: emptyTech(),
       hypotheses: "",
       experiments: "",
       findings: "",
     },
     eliminate: {
-      owner: { ...emptyTech },
+      owner: emptyTech(),
       rootCause: "",
       fixApplied: "",
       safeguards: "",

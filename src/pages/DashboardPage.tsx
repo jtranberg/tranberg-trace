@@ -1,12 +1,40 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { loadInvestigations } from "../utils/storage";
+import type { TraceInvestigation } from "../types/trace";
+import { getDurationLabel, loadInvestigations } from "../utils/storage";
 
 function emptyText(value: string, fallback: string) {
   return value.trim() ? value : fallback;
 }
 
 export default function DashboardPage() {
-  const investigations = loadInvestigations();
+  const [investigations, setInvestigations] = useState<TraceInvestigation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchInvestigations() {
+      try {
+        const data = await loadInvestigations();
+        if (isMounted) {
+          setInvestigations(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch investigations:", error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchInvestigations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <section className="page-stack">
@@ -24,7 +52,12 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {investigations.length === 0 ? (
+      {isLoading ? (
+        <section className="empty-state">
+          <h3>Loading investigations...</h3>
+          <p>Pulling your latest TRACE cases from the database.</p>
+        </section>
+      ) : investigations.length === 0 ? (
         <section className="empty-state">
           <h3>No investigations yet</h3>
           <p>
@@ -63,6 +96,7 @@ export default function DashboardPage() {
               <div className="meta-row">
                 <span>{item.layer}</span>
                 <span>{item.environment}</span>
+                <span>⏱ {getDurationLabel(item.createdAt, item.updatedAt)}</span>
               </div>
 
               {item.tags.length > 0 && (

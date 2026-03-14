@@ -88,3 +88,50 @@ export function createEmptyInvestigation(): TraceInvestigation {
     updatedAt: now,
   };
 }
+
+export function formatDateTime(value: string): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "Unknown time";
+
+  return date.toLocaleString([], {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function getDurationMinutes(
+  createdAt: string,
+  updatedAt: string
+): number | null {
+  const start = new Date(createdAt).getTime();
+  const end = new Date(updatedAt).getTime();
+
+  if (Number.isNaN(start) || Number.isNaN(end)) return null;
+
+  return Math.max(0, Math.round((end - start) / 1000 / 60));
+}
+
+export function getDurationLabel(
+  createdAt: string,
+  updatedAt: string
+): string {
+  const start = new Date(createdAt).getTime();
+  const end = new Date(updatedAt).getTime();
+
+  if (Number.isNaN(start) || Number.isNaN(end)) return "Unknown";
+
+  const totalMinutes = Math.max(0, Math.round((end - start) / 1000 / 60));
+
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (minutes === 0) return `${hours} hr`;
+
+  return `${hours} hr ${minutes} min`;
+}

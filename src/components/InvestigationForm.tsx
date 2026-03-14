@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import TraceSectionCard from "./TraceSectionCard";
 import type { TraceInvestigation } from "../types/trace";
 
@@ -14,6 +14,10 @@ export default function InvestigationForm({
   onSubmit,
 }: InvestigationFormProps) {
   const [form, setForm] = useState<TraceInvestigation>(initialValue);
+
+  useEffect(() => {
+    setForm(initialValue);
+  }, [initialValue]);
 
   function updateField<K extends keyof TraceInvestigation>(
     key: K,
@@ -428,9 +432,9 @@ export default function InvestigationForm({
             <span>Error Messages</span>
             <textarea
               rows={4}
-              value={form.analyze.errors}
+              value={form.analyze.observedErrors}
               onChange={(e) =>
-                updateNestedField("analyze", "errors", e.target.value)
+                updateNestedField("analyze", "observedErrors", e.target.value)
               }
             />
           </label>

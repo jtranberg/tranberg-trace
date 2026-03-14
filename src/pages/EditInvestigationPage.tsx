@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import InvestigationForm from "../components/InvestigationForm";
+import type { TraceInvestigation } from "../types/trace";
 import {
   getInvestigationById,
   updateInvestigation,
@@ -8,6 +10,43 @@ import {
 export default function EditInvestigationPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const [investigation, setInvestigation] = useState<TraceInvestigation | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadInvestigation() {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const result = await getInvestigationById(id);
+
+        if (isMounted) {
+          setInvestigation(result ?? null);
+        }
+      } catch (error) {
+        console.error("Failed to load investigation:", error);
+        if (isMounted) {
+          setInvestigation(null);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadInvestigation();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
 
   if (!id) {
     return (
@@ -20,7 +59,14 @@ export default function EditInvestigationPage() {
     );
   }
 
-  const investigation = getInvestigationById(id);
+  if (loading) {
+    return (
+      <section className="empty-state">
+        <h2>Loading investigation...</h2>
+        <p>Pulling the case file now.</p>
+      </section>
+    );
+  }
 
   if (!investigation) {
     return (
@@ -44,8 +90,8 @@ export default function EditInvestigationPage() {
       <InvestigationForm
         initialValue={investigation}
         submitLabel="Update Investigation"
-        onSubmit={(value) => {
-          updateInvestigation(value);
+        onSubmit={async (value) => {
+          await updateInvestigation(value);
           navigate(`/investigation/${value.id}`);
         }}
       />

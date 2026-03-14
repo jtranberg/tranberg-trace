@@ -6,23 +6,23 @@ import Investigation from "../models/Investigation.js";
 
 const router = express.Router();
 
-router.get("/seed", async (req, res) => {
-  try {
-    const test = await Investigation.create({
-      title: "TRACE system test",
-      description: "First investigation stored in Mongo",
-      severity: "medium",
-      layer: "api",
-      environment: "local",
-      tags: ["test"]
-    });
+// router.get("/seed", async (req, res) => {
+//   try {
+//     const test = await Investigation.create({
+//       title: "TRACE system test",
+//       description: "First investigation stored in Mongo",
+//       severity: "medium",
+//       layer: "api",
+//       environment: "local",
+//       tags: ["test"]
+//     });
 
-    res.json(test);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Seed failed" });
-  }
-});
+//     res.json(test);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Seed failed" });
+//   }
+// });
 
 /* GET all investigations */
 router.get("/", async (_req, res) => {

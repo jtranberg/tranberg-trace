@@ -1,10 +1,12 @@
+import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import TraceSectionCard from "../components/TraceSectionCard";
+import type { TraceInvestigation } from "../types/trace";
 import {
   deleteInvestigation,
   formatDateTime,
-  getDurationMinutes,
+  getDurationLabel,
   getInvestigationById,
 } from "../utils/storage";
 
@@ -12,9 +14,68 @@ export default function InvestigationDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const foundInvestigation = id ? getInvestigationById(id) : undefined;
+  const [investigation, setInvestigation] = useState<TraceInvestigation | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (!foundInvestigation) {
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchInvestigation() {
+      if (!id) {
+        if (isMounted) {
+          setInvestigation(null);
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const data = await getInvestigationById(id);
+        if (isMounted) {
+          setInvestigation(data ?? null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch investigation:", error);
+        if (isMounted) {
+          setInvestigation(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchInvestigation();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  function emptyText(value: string, fallback: string) {
+    return value.trim() ? value : fallback;
+  }
+
+  function techLabel(techId: string, techName: string, fallback: string): string {
+    const name = techName.trim();
+    const idValue = techId.trim();
+
+    if (!name && !idValue) return fallback;
+    if (name && idValue) return `${name} (${idValue})`;
+    return name || idValue;
+  }
+
+  if (isLoading) {
+    return (
+      <section className="empty-state">
+        <h2>Loading investigation...</h2>
+        <p>Pulling the latest TRACE case from the database.</p>
+      </section>
+    );
+  }
+
+  if (!investigation) {
     return (
       <section className="empty-state">
         <h2>Investigation not found</h2>
@@ -26,39 +87,27 @@ export default function InvestigationDetailPage() {
     );
   }
 
-  const investigation = foundInvestigation;
-  const durationMinutes = getDurationMinutes(
-    investigation.createdAt,
-    investigation.updatedAt
+  const current = investigation;
+
+  const durationLabel = getDurationLabel(
+    current.createdAt,
+    current.updatedAt
   );
 
-  function emptyText(value: string, fallback: string) {
-    return value.trim() ? value : fallback;
-  }
-
-  function techLabel(
-    techId: string,
-    techName: string,
-    fallback: string
-  ): string {
-    const name = techName.trim();
-    const id = techId.trim();
-
-    if (!name && !id) return fallback;
-    if (name && id) return `${name} (${id})`;
-
-    return name || id;
-  }
-
-  function handleDelete() {
+  async function handleDelete() {
     const confirmed = window.confirm(
       "Delete this investigation? This action cannot be undone."
     );
 
     if (!confirmed) return;
 
-    deleteInvestigation(investigation.id);
-    navigate("/");
+    try {
+      await deleteInvestigation(current.id);
+      navigate("/");
+    } catch (error) {
+      console.error("Failed to delete investigation:", error);
+      alert("Failed to delete investigation.");
+    }
   }
 
   function addWrappedText(
@@ -130,14 +179,14 @@ export default function InvestigationDetailPage() {
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
-    y = addWrappedText(doc, investigation.title, margin, y, maxWidth);
+    y = addWrappedText(doc, current.title, margin, y, maxWidth);
     y += 2;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     y = addWrappedText(
       doc,
-      emptyText(investigation.description, "No summary has been added yet."),
+      emptyText(current.description, "No summary has been added yet."),
       margin,
       y,
       maxWidth
@@ -145,56 +194,53 @@ export default function InvestigationDetailPage() {
     y += sectionGap;
 
     subheading("Overview");
-    labelValue("Status", investigation.status.replace("_", " "));
-    labelValue("Severity", investigation.severity);
-    labelValue("Layer", investigation.layer);
-    labelValue("Environment", investigation.environment);
-    labelValue("Tags", investigation.tags.join(", "), "No tags added.");
+    labelValue("Status", current.status.replace("_", " "));
+    labelValue("Severity", current.severity);
+    labelValue("Layer", current.layer);
+    labelValue("Environment", current.environment);
+    labelValue("Tags", current.tags.join(", "), "No tags added.");
     labelValue(
       "Reported By",
       techLabel(
-        investigation.reportedBy.techId,
-        investigation.reportedBy.techName,
+        current.reportedBy.techId,
+        current.reportedBy.techName,
         "Not assigned"
       )
     );
     labelValue(
       "Opened By",
       techLabel(
-        investigation.openedBy.techId,
-        investigation.openedBy.techName,
+        current.openedBy.techId,
+        current.openedBy.techName,
         "Not assigned"
       )
     );
-    labelValue("Created", formatDateTime(investigation.createdAt));
-    labelValue("Last Updated", formatDateTime(investigation.updatedAt));
-    labelValue(
-      "Debug Duration",
-      durationMinutes !== null ? `${durationMinutes} minutes` : "Unknown"
-    );
+    labelValue("Created", formatDateTime(current.createdAt));
+    labelValue("Last Updated", formatDateTime(current.updatedAt));
+    labelValue("Resolution Time", durationLabel);
 
     subheading("T — Trigger the Issue");
     labelValue(
       "Stage Owner",
       techLabel(
-        investigation.trigger.owner.techId,
-        investigation.trigger.owner.techName,
+        current.trigger.owner.techId,
+        current.trigger.owner.techName,
         "No trigger owner assigned yet."
       )
     );
     labelValue(
       "Steps to Reproduce",
-      investigation.trigger.stepsToReproduce,
+      current.trigger.stepsToReproduce,
       "Reproduction steps have not been documented yet."
     );
     labelValue(
       "Expected Behavior",
-      investigation.trigger.expectedBehavior,
+      current.trigger.expectedBehavior,
       "Expected behavior has not been recorded yet."
     );
     labelValue(
       "Actual Behavior",
-      investigation.trigger.actualBehavior,
+      current.trigger.actualBehavior,
       "Actual behavior has not been recorded yet."
     );
 
@@ -202,19 +248,19 @@ export default function InvestigationDetailPage() {
     labelValue(
       "Stage Owner",
       techLabel(
-        investigation.reduce.owner.techId,
-        investigation.reduce.owner.techName,
+        current.reduce.owner.techId,
+        current.reduce.owner.techName,
         "No reduce owner assigned yet."
       )
     );
     labelValue(
       "Suspected Layer",
-      investigation.reduce.suspectedLayer,
+      current.reduce.suspectedLayer,
       "Suspected layer has not been identified yet."
     );
     labelValue(
       "Scope Notes",
-      investigation.reduce.scopeNotes,
+      current.reduce.scopeNotes,
       "Scope notes have not been recorded yet."
     );
 
@@ -222,49 +268,49 @@ export default function InvestigationDetailPage() {
     labelValue(
       "Stage Owner",
       techLabel(
-        investigation.analyze.owner.techId,
-        investigation.analyze.owner.techName,
+        current.analyze.owner.techId,
+        current.analyze.owner.techName,
         "No analyze owner assigned yet."
       )
     );
     labelValue(
       "Logs",
-      investigation.analyze.logs,
+      current.analyze.logs,
       "Logs have not been captured yet."
     );
     labelValue(
       "Telemetry",
-      investigation.analyze.telemetry,
+      current.analyze.telemetry,
       "Telemetry has not been captured yet."
     );
     labelValue(
-      "Error Messages",
-      investigation.analyze.errors,
-      "Error messages have not been recorded yet."
+      "Observed Errors",
+      current.analyze.observedErrors,
+      "Observed errors have not been recorded yet."
     );
 
     subheading("C — Challenge Assumptions");
     labelValue(
       "Stage Owner",
       techLabel(
-        investigation.challenge.owner.techId,
-        investigation.challenge.owner.techName,
+        current.challenge.owner.techId,
+        current.challenge.owner.techName,
         "No challenge owner assigned yet."
       )
     );
     labelValue(
       "Hypotheses",
-      investigation.challenge.hypotheses,
+      current.challenge.hypotheses,
       "No hypotheses have been recorded yet."
     );
     labelValue(
       "Experiments",
-      investigation.challenge.experiments,
+      current.challenge.experiments,
       "No experiments have been recorded yet."
     );
     labelValue(
       "Findings",
-      investigation.challenge.findings,
+      current.challenge.findings,
       "No findings have been documented yet."
     );
 
@@ -272,33 +318,33 @@ export default function InvestigationDetailPage() {
     labelValue(
       "Stage Owner",
       techLabel(
-        investigation.eliminate.owner.techId,
-        investigation.eliminate.owner.techName,
+        current.eliminate.owner.techId,
+        current.eliminate.owner.techName,
         "No eliminate owner assigned yet."
       )
     );
     labelValue(
       "Root Cause",
-      investigation.eliminate.rootCause,
+      current.eliminate.rootCause,
       "Root cause has not been identified yet."
     );
     labelValue(
       "Fix Applied",
-      investigation.eliminate.fixApplied,
+      current.eliminate.fixApplied,
       "Fix applied has not been recorded yet."
     );
     labelValue(
       "Safeguards",
-      investigation.eliminate.safeguards,
+      current.eliminate.safeguards,
       "Safeguards have not been documented yet."
     );
     labelValue(
       "Follow-up",
-      investigation.eliminate.followUp,
+      current.eliminate.followUp,
       "No follow-up actions have been recorded yet."
     );
 
-    const safeTitle = investigation.title
+    const safeTitle = current.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
@@ -308,22 +354,22 @@ export default function InvestigationDetailPage() {
 
   return (
     <section className="page-stack">
-      <div className={`page-hero severity-hero-${investigation.severity}`}>
+      <div className={`page-hero severity-hero-${current.severity}`}>
         <div className="detail-header-row">
           <div>
             <div className="card-topline">
-              <span className={`badge status-${investigation.status}`}>
-                {investigation.status.replace("_", " ")}
+              <span className={`badge status-${current.status}`}>
+                {current.status.replace("_", " ")}
               </span>
-              <span className={`badge severity-${investigation.severity}`}>
-                {investigation.severity}
+              <span className={`badge severity-${current.severity}`}>
+                {current.severity}
               </span>
             </div>
 
-            <h2>{investigation.title}</h2>
+            <h2>{current.title}</h2>
             <p>
               {emptyText(
-                investigation.description,
+                current.description,
                 "No summary has been added yet."
               )}
             </p>
@@ -332,7 +378,7 @@ export default function InvestigationDetailPage() {
           <div className="action-row">
             <Link
               className="secondary-btn"
-              to={`/investigation/${investigation.id}/edit`}
+              to={`/investigation/${current.id}/edit`}
             >
               Edit
             </Link>
@@ -350,35 +396,32 @@ export default function InvestigationDetailPage() {
         </div>
 
         <div className="meta-row">
-          <span>Layer: {investigation.layer}</span>
-          <span>Environment: {investigation.environment}</span>
+          <span>Layer: {current.layer}</span>
+          <span>Environment: {current.environment}</span>
           <span>
             Reported By:{" "}
             {techLabel(
-              investigation.reportedBy.techId,
-              investigation.reportedBy.techName,
+              current.reportedBy.techId,
+              current.reportedBy.techName,
               "Not assigned"
             )}
           </span>
           <span>
             Opened By:{" "}
             {techLabel(
-              investigation.openedBy.techId,
-              investigation.openedBy.techName,
+              current.openedBy.techId,
+              current.openedBy.techName,
               "Not assigned"
             )}
           </span>
-          <span>Created: {formatDateTime(investigation.createdAt)}</span>
-          <span>Updated: {formatDateTime(investigation.updatedAt)}</span>
-          <span>
-            Duration:{" "}
-            {durationMinutes !== null ? `${durationMinutes} min` : "Unknown"}
-          </span>
+          <span>Created: {formatDateTime(current.createdAt)}</span>
+          <span>Updated: {formatDateTime(current.updatedAt)}</span>
+          <span>Resolution Time: {durationLabel}</span>
         </div>
 
-        {investigation.tags.length > 0 && (
+        {current.tags.length > 0 && (
           <div className="tag-row">
-            {investigation.tags.map((tag: string) => (
+            {current.tags.map((tag: string) => (
               <span key={tag} className="tag-pill">
                 {tag}
               </span>
@@ -396,8 +439,8 @@ export default function InvestigationDetailPage() {
             <h4>Stage Owner</h4>
             <p>
               {techLabel(
-                investigation.trigger.owner.techId,
-                investigation.trigger.owner.techName,
+                current.trigger.owner.techId,
+                current.trigger.owner.techName,
                 "No trigger owner assigned yet."
               )}
             </p>
@@ -406,7 +449,7 @@ export default function InvestigationDetailPage() {
             <h4>Steps to Reproduce</h4>
             <p>
               {emptyText(
-                investigation.trigger.stepsToReproduce,
+                current.trigger.stepsToReproduce,
                 "Reproduction steps have not been documented yet."
               )}
             </p>
@@ -415,7 +458,7 @@ export default function InvestigationDetailPage() {
             <h4>Expected Behavior</h4>
             <p>
               {emptyText(
-                investigation.trigger.expectedBehavior,
+                current.trigger.expectedBehavior,
                 "Expected behavior has not been recorded yet."
               )}
             </p>
@@ -424,7 +467,7 @@ export default function InvestigationDetailPage() {
             <h4>Actual Behavior</h4>
             <p>
               {emptyText(
-                investigation.trigger.actualBehavior,
+                current.trigger.actualBehavior,
                 "Actual behavior has not been recorded yet."
               )}
             </p>
@@ -441,8 +484,8 @@ export default function InvestigationDetailPage() {
             <h4>Stage Owner</h4>
             <p>
               {techLabel(
-                investigation.reduce.owner.techId,
-                investigation.reduce.owner.techName,
+                current.reduce.owner.techId,
+                current.reduce.owner.techName,
                 "No reduce owner assigned yet."
               )}
             </p>
@@ -451,7 +494,7 @@ export default function InvestigationDetailPage() {
             <h4>Suspected Layer</h4>
             <p>
               {emptyText(
-                investigation.reduce.suspectedLayer,
+                current.reduce.suspectedLayer,
                 "Suspected layer has not been identified yet."
               )}
             </p>
@@ -460,7 +503,7 @@ export default function InvestigationDetailPage() {
             <h4>Scope Notes</h4>
             <p>
               {emptyText(
-                investigation.reduce.scopeNotes,
+                current.reduce.scopeNotes,
                 "Scope notes have not been recorded yet."
               )}
             </p>
@@ -477,8 +520,8 @@ export default function InvestigationDetailPage() {
             <h4>Stage Owner</h4>
             <p>
               {techLabel(
-                investigation.analyze.owner.techId,
-                investigation.analyze.owner.techName,
+                current.analyze.owner.techId,
+                current.analyze.owner.techName,
                 "No analyze owner assigned yet."
               )}
             </p>
@@ -487,7 +530,7 @@ export default function InvestigationDetailPage() {
             <h4>Logs</h4>
             <p>
               {emptyText(
-                investigation.analyze.logs,
+                current.analyze.logs,
                 "Logs have not been captured yet."
               )}
             </p>
@@ -496,17 +539,17 @@ export default function InvestigationDetailPage() {
             <h4>Telemetry</h4>
             <p>
               {emptyText(
-                investigation.analyze.telemetry,
+                current.analyze.telemetry,
                 "Telemetry has not been captured yet."
               )}
             </p>
           </div>
           <div>
-            <h4>Error Messages</h4>
+            <h4>Observed Errors</h4>
             <p>
               {emptyText(
-                investigation.analyze.errors,
-                "Error messages have not been recorded yet."
+                current.analyze.observedErrors,
+                "Observed errors have not been recorded yet."
               )}
             </p>
           </div>
@@ -522,8 +565,8 @@ export default function InvestigationDetailPage() {
             <h4>Stage Owner</h4>
             <p>
               {techLabel(
-                investigation.challenge.owner.techId,
-                investigation.challenge.owner.techName,
+                current.challenge.owner.techId,
+                current.challenge.owner.techName,
                 "No challenge owner assigned yet."
               )}
             </p>
@@ -532,7 +575,7 @@ export default function InvestigationDetailPage() {
             <h4>Hypotheses</h4>
             <p>
               {emptyText(
-                investigation.challenge.hypotheses,
+                current.challenge.hypotheses,
                 "No hypotheses have been recorded yet."
               )}
             </p>
@@ -541,7 +584,7 @@ export default function InvestigationDetailPage() {
             <h4>Experiments</h4>
             <p>
               {emptyText(
-                investigation.challenge.experiments,
+                current.challenge.experiments,
                 "No experiments have been recorded yet."
               )}
             </p>
@@ -550,7 +593,7 @@ export default function InvestigationDetailPage() {
             <h4>Findings</h4>
             <p>
               {emptyText(
-                investigation.challenge.findings,
+                current.challenge.findings,
                 "No findings have been documented yet."
               )}
             </p>
@@ -567,8 +610,8 @@ export default function InvestigationDetailPage() {
             <h4>Stage Owner</h4>
             <p>
               {techLabel(
-                investigation.eliminate.owner.techId,
-                investigation.eliminate.owner.techName,
+                current.eliminate.owner.techId,
+                current.eliminate.owner.techName,
                 "No eliminate owner assigned yet."
               )}
             </p>
@@ -577,7 +620,7 @@ export default function InvestigationDetailPage() {
             <h4>Root Cause</h4>
             <p>
               {emptyText(
-                investigation.eliminate.rootCause,
+                current.eliminate.rootCause,
                 "Root cause has not been identified yet."
               )}
             </p>
@@ -586,7 +629,7 @@ export default function InvestigationDetailPage() {
             <h4>Fix Applied</h4>
             <p>
               {emptyText(
-                investigation.eliminate.fixApplied,
+                current.eliminate.fixApplied,
                 "Fix applied has not been recorded yet."
               )}
             </p>
@@ -595,7 +638,7 @@ export default function InvestigationDetailPage() {
             <h4>Safeguards</h4>
             <p>
               {emptyText(
-                investigation.eliminate.safeguards,
+                current.eliminate.safeguards,
                 "Safeguards have not been documented yet."
               )}
             </p>
@@ -604,7 +647,7 @@ export default function InvestigationDetailPage() {
             <h4>Follow-up</h4>
             <p>
               {emptyText(
-                investigation.eliminate.followUp,
+                current.eliminate.followUp,
                 "No follow-up actions have been recorded yet."
               )}
             </p>

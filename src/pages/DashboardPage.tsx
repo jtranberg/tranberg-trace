@@ -1,7 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { TraceInvestigation } from "../types/trace";
-import { getDurationLabel, loadInvestigations } from "../utils/storage";
+import {
+  getDurationLabel,
+  loadInvestigations,
+  loadProjects,
+  loadTenants,
+  type ProjectOption,
+  type TenantOption,
+} from "../utils/storage";
 
 function emptyText(value: string, fallback: string) {
   return value.trim() ? value : fallback;
@@ -11,17 +18,27 @@ export default function DashboardPage() {
   const [investigations, setInvestigations] = useState<TraceInvestigation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [tenants, setTenants] = useState<TenantOption[]>([]);
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
+  const [selectedTenantId, setSelectedTenantId] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+
   useEffect(() => {
     let isMounted = true;
 
-    async function fetchInvestigations() {
+    async function fetchData() {
       try {
-        const data = await loadInvestigations();
+        const [investigationData, tenantData] = await Promise.all([
+          loadInvestigations(),
+          loadTenants(),
+        ]);
+
         if (isMounted) {
-          setInvestigations(data);
+          setInvestigations(investigationData);
+          setTenants(tenantData);
         }
       } catch (error) {
-        console.error("Failed to fetch investigations:", error);
+        console.error("Failed to fetch dashboard data:", error);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -29,12 +46,56 @@ export default function DashboardPage() {
       }
     }
 
-    fetchInvestigations();
+    fetchData();
 
     return () => {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchProjects() {
+      if (!selectedTenantId) {
+        setProjects([]);
+        setSelectedProjectId("");
+        return;
+      }
+
+      try {
+        const data = await loadProjects(selectedTenantId);
+        if (isMounted) {
+          setProjects(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch projects:", error);
+        if (isMounted) {
+          setProjects([]);
+        }
+      }
+    }
+
+    fetchProjects();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedTenantId]);
+
+  const filteredInvestigations = useMemo(() => {
+    return investigations.filter((item) => {
+      const matchesTenant = selectedTenantId
+        ? item.tenantId === selectedTenantId
+        : true;
+
+      const matchesProject = selectedProjectId
+        ? item.projectId === selectedProjectId
+        : true;
+
+      return matchesTenant && matchesProject;
+    });
+  }, [investigations, selectedTenantId, selectedProjectId]);
 
   return (
     <section className="page-stack">
@@ -52,25 +113,69 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      <div className="trace-card">
+        <div className="trace-card-header">
+          <h3>Workspace Filters</h3>
+          <p>Focus investigations by company and project.</p>
+        </div>
+
+        <div className="form-grid">
+          <label className="field">
+            <span>Company</span>
+            <select
+              value={selectedTenantId}
+              onChange={(e) => {
+                setSelectedTenantId(e.target.value);
+                setSelectedProjectId("");
+              }}
+            >
+              <option value="">All companies</option>
+              {tenants.map((tenant) => (
+                <option key={tenant._id} value={tenant._id}>
+                  {tenant.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="field">
+            <span>Project</span>
+            <select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              disabled={!selectedTenantId}
+            >
+              <option value="">
+                {!selectedTenantId ? "Select a company first" : "All projects"}
+              </option>
+              {projects.map((project) => (
+                <option key={project._id} value={project._id}>
+                  {project.name} ({project.key})
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+
       {isLoading ? (
         <section className="empty-state">
           <h3>Loading investigations...</h3>
           <p>Pulling your latest TRACE cases from the database.</p>
         </section>
-      ) : investigations.length === 0 ? (
+      ) : filteredInvestigations.length === 0 ? (
         <section className="empty-state">
-          <h3>No investigations yet</h3>
+          <h3>No investigations found</h3>
           <p>
-            Start your first TRACE case and begin building your debugging
-            library.
+            Try adjusting the workspace filters or create a new TRACE case.
           </p>
           <Link className="secondary-btn" to="/new">
-            Create First Investigation
+            Create Investigation
           </Link>
         </section>
       ) : (
         <div className="investigation-grid">
-          {investigations.map((item) => (
+          {filteredInvestigations.map((item) => (
             <Link
               key={item.id}
               to={`/investigation/${item.id}`}
@@ -92,6 +197,11 @@ export default function DashboardPage() {
                   "No description has been added yet."
                 )}
               </p>
+
+              <div className="meta-row">
+                <span>{item.tenantName || "No company"}</span>
+                <span>{item.projectName || "No project"}</span>
+              </div>
 
               <div className="meta-row">
                 <span>{item.layer}</span>

@@ -31,13 +31,46 @@ export default function InvestigationForm({
       TraceInvestigation,
       "trigger" | "reduce" | "analyze" | "challenge" | "eliminate"
     >,
-    F extends keyof TraceInvestigation[K]
+    F extends Exclude<keyof TraceInvestigation[K], "owner">
   >(section: K, field: F, value: TraceInvestigation[K][F]) {
-    setForm((prev) => ({
+    setForm((prev: TraceInvestigation) => ({
       ...prev,
       [section]: {
         ...prev[section],
         [field]: value,
+      },
+      updatedAt: new Date().toISOString(),
+    }));
+  }
+
+  function updateTopLevelTech(
+    field: "reportedBy" | "openedBy",
+    techKey: "techId" | "techName",
+    value: string
+  ) {
+    setForm((prev: TraceInvestigation) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        [techKey]: value,
+      },
+      updatedAt: new Date().toISOString(),
+    }));
+  }
+
+  function updateStageOwner(
+    section: "trigger" | "reduce" | "analyze" | "challenge" | "eliminate",
+    techKey: "techId" | "techName",
+    value: string
+  ) {
+    setForm((prev: TraceInvestigation) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        owner: {
+          ...prev[section].owner,
+          [techKey]: value,
+        },
       },
       updatedAt: new Date().toISOString(),
     }));
@@ -171,6 +204,54 @@ export default function InvestigationForm({
               onChange={(e) => handleTagsChange(e.target.value)}
             />
           </label>
+
+          <label className="field">
+            <span>Reported By Name</span>
+            <input
+              type="text"
+              placeholder="Example: Jay Tranberg"
+              value={form.reportedBy.techName}
+              onChange={(e) =>
+                updateTopLevelTech("reportedBy", "techName", e.target.value)
+              }
+            />
+          </label>
+
+          <label className="field">
+            <span>Reported By ID</span>
+            <input
+              type="text"
+              placeholder="Example: TECH-001"
+              value={form.reportedBy.techId}
+              onChange={(e) =>
+                updateTopLevelTech("reportedBy", "techId", e.target.value)
+              }
+            />
+          </label>
+
+          <label className="field">
+            <span>Opened By Name</span>
+            <input
+              type="text"
+              placeholder="Example: Alex Chen"
+              value={form.openedBy.techName}
+              onChange={(e) =>
+                updateTopLevelTech("openedBy", "techName", e.target.value)
+              }
+            />
+          </label>
+
+          <label className="field">
+            <span>Opened By ID</span>
+            <input
+              type="text"
+              placeholder="Example: TECH-014"
+              value={form.openedBy.techId}
+              onChange={(e) =>
+                updateTopLevelTech("openedBy", "techId", e.target.value)
+              }
+            />
+          </label>
         </div>
       </section>
 
@@ -179,6 +260,30 @@ export default function InvestigationForm({
         subtitle="Reproduce it clearly and define the gap between expected and actual behavior."
       >
         <div className="form-grid">
+          <label className="field">
+            <span>Trigger Owner Name</span>
+            <input
+              type="text"
+              placeholder="Example: Jordan Lee"
+              value={form.trigger.owner.techName}
+              onChange={(e) =>
+                updateStageOwner("trigger", "techName", e.target.value)
+              }
+            />
+          </label>
+
+          <label className="field">
+            <span>Trigger Owner ID</span>
+            <input
+              type="text"
+              placeholder="Example: TECH-021"
+              value={form.trigger.owner.techId}
+              onChange={(e) =>
+                updateStageOwner("trigger", "techId", e.target.value)
+              }
+            />
+          </label>
+
           <label className="field field-full">
             <span>Steps to Reproduce</span>
             <textarea
@@ -220,6 +325,30 @@ export default function InvestigationForm({
       >
         <div className="form-grid">
           <label className="field">
+            <span>Reduce Owner Name</span>
+            <input
+              type="text"
+              placeholder="Example: Taylor Brooks"
+              value={form.reduce.owner.techName}
+              onChange={(e) =>
+                updateStageOwner("reduce", "techName", e.target.value)
+              }
+            />
+          </label>
+
+          <label className="field">
+            <span>Reduce Owner ID</span>
+            <input
+              type="text"
+              placeholder="Example: TECH-031"
+              value={form.reduce.owner.techId}
+              onChange={(e) =>
+                updateStageOwner("reduce", "techId", e.target.value)
+              }
+            />
+          </label>
+
+          <label className="field">
             <span>Suspected Layer</span>
             <input
               type="text"
@@ -249,6 +378,30 @@ export default function InvestigationForm({
         subtitle="Capture logs, telemetry, and raw evidence."
       >
         <div className="form-grid">
+          <label className="field">
+            <span>Analyze Owner Name</span>
+            <input
+              type="text"
+              placeholder="Example: Morgan Patel"
+              value={form.analyze.owner.techName}
+              onChange={(e) =>
+                updateStageOwner("analyze", "techName", e.target.value)
+              }
+            />
+          </label>
+
+          <label className="field">
+            <span>Analyze Owner ID</span>
+            <input
+              type="text"
+              placeholder="Example: TECH-041"
+              value={form.analyze.owner.techId}
+              onChange={(e) =>
+                updateStageOwner("analyze", "techId", e.target.value)
+              }
+            />
+          </label>
+
           <label className="field field-full">
             <span>Logs</span>
             <textarea
@@ -290,6 +443,30 @@ export default function InvestigationForm({
       >
         <div className="form-grid">
           <label className="field">
+            <span>Challenge Owner Name</span>
+            <input
+              type="text"
+              placeholder="Example: Sam Rivera"
+              value={form.challenge.owner.techName}
+              onChange={(e) =>
+                updateStageOwner("challenge", "techName", e.target.value)
+              }
+            />
+          </label>
+
+          <label className="field">
+            <span>Challenge Owner ID</span>
+            <input
+              type="text"
+              placeholder="Example: TECH-051"
+              value={form.challenge.owner.techId}
+              onChange={(e) =>
+                updateStageOwner("challenge", "techId", e.target.value)
+              }
+            />
+          </label>
+
+          <label className="field">
             <span>Hypotheses</span>
             <textarea
               rows={4}
@@ -329,6 +506,30 @@ export default function InvestigationForm({
         subtitle="Document the actual fix and the guardrails that keep it gone."
       >
         <div className="form-grid">
+          <label className="field">
+            <span>Eliminate Owner Name</span>
+            <input
+              type="text"
+              placeholder="Example: Casey Wong"
+              value={form.eliminate.owner.techName}
+              onChange={(e) =>
+                updateStageOwner("eliminate", "techName", e.target.value)
+              }
+            />
+          </label>
+
+          <label className="field">
+            <span>Eliminate Owner ID</span>
+            <input
+              type="text"
+              placeholder="Example: TECH-061"
+              value={form.eliminate.owner.techId}
+              onChange={(e) =>
+                updateStageOwner("eliminate", "techId", e.target.value)
+              }
+            />
+          </label>
+
           <label className="field">
             <span>Root Cause</span>
             <textarea

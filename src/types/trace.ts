@@ -16,6 +16,11 @@ export type SystemLayer =
 
 export type EnvironmentType = "local" | "staging" | "production";
 
+export type TechReference = {
+  techId: string;
+  techName: string;
+};
+
 export type TraceInvestigation = {
   id: string;
   title: string;
@@ -25,31 +30,45 @@ export type TraceInvestigation = {
   layer: SystemLayer;
   environment: EnvironmentType;
   tags: string[];
+
+  reportedBy: TechReference;
+  openedBy: TechReference;
+
   trigger: {
+    owner: TechReference;
     stepsToReproduce: string;
     expectedBehavior: string;
     actualBehavior: string;
   };
+
   reduce: {
+    owner: TechReference;
     suspectedLayer: string;
     scopeNotes: string;
   };
+
   analyze: {
+    owner: TechReference;
     logs: string;
     telemetry: string;
     errors: string;
   };
+
   challenge: {
+    owner: TechReference;
     hypotheses: string;
     experiments: string;
     findings: string;
   };
+
   eliminate: {
+    owner: TechReference;
     rootCause: string;
     fixApplied: string;
     safeguards: string;
     followUp: string;
   };
+
   createdAt: string;
   updatedAt: string;
 };

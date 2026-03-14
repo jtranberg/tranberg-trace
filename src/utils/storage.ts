@@ -50,6 +50,11 @@ export function deleteInvestigation(id: string): void {
 export function createEmptyInvestigation(): TraceInvestigation {
   const now = new Date().toISOString();
 
+  const emptyTech = {
+    techId: "",
+    techName: "",
+  };
+
   return {
     id: crypto.randomUUID(),
     title: "",
@@ -59,31 +64,41 @@ export function createEmptyInvestigation(): TraceInvestigation {
     layer: "unknown",
     environment: "local",
     tags: [],
+
+    reportedBy: { ...emptyTech },
+    openedBy: { ...emptyTech },
+
     trigger: {
+      owner: { ...emptyTech },
       stepsToReproduce: "",
       expectedBehavior: "",
       actualBehavior: "",
     },
     reduce: {
+      owner: { ...emptyTech },
       suspectedLayer: "",
       scopeNotes: "",
     },
     analyze: {
+      owner: { ...emptyTech },
       logs: "",
       telemetry: "",
       errors: "",
     },
     challenge: {
+      owner: { ...emptyTech },
       hypotheses: "",
       experiments: "",
       findings: "",
     },
     eliminate: {
+      owner: { ...emptyTech },
       rootCause: "",
       fixApplied: "",
       safeguards: "",
       followUp: "",
     },
+
     createdAt: now,
     updatedAt: now,
   };

@@ -36,6 +36,20 @@ export default function InvestigationDetailPage() {
     return value.trim() ? value : fallback;
   }
 
+  function techLabel(
+    techId: string,
+    techName: string,
+    fallback: string
+  ): string {
+    const name = techName.trim();
+    const id = techId.trim();
+
+    if (!name && !id) return fallback;
+    if (name && id) return `${name} (${id})`;
+
+    return name || id;
+  }
+
   function handleDelete() {
     const confirmed = window.confirm(
       "Delete this investigation? This action cannot be undone."
@@ -55,7 +69,8 @@ export default function InvestigationDetailPage() {
     maxWidth: number,
     lineHeight = 7
   ) {
-    const lines = doc.splitTextToSize(text.trim() ? text : "Not documented yet.", maxWidth);
+    const safeText = text.trim() ? text : "Not documented yet.";
+    const lines = doc.splitTextToSize(safeText, maxWidth);
     doc.text(lines, x, y);
     return y + lines.length * lineHeight;
   }
@@ -94,7 +109,11 @@ export default function InvestigationDetailPage() {
       y += 8;
     }
 
-    function labelValue(label: string, value: string, fallback = "Not documented yet.") {
+    function labelValue(
+      label: string,
+      value: string,
+      fallback = "Not documented yet."
+    ) {
       ensureSpace(18);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
@@ -131,6 +150,22 @@ export default function InvestigationDetailPage() {
     labelValue("Layer", investigation.layer);
     labelValue("Environment", investigation.environment);
     labelValue("Tags", investigation.tags.join(", "), "No tags added.");
+    labelValue(
+      "Reported By",
+      techLabel(
+        investigation.reportedBy.techId,
+        investigation.reportedBy.techName,
+        "Not assigned"
+      )
+    );
+    labelValue(
+      "Opened By",
+      techLabel(
+        investigation.openedBy.techId,
+        investigation.openedBy.techName,
+        "Not assigned"
+      )
+    );
     labelValue("Created", formatDateTime(investigation.createdAt));
     labelValue("Last Updated", formatDateTime(investigation.updatedAt));
     labelValue(
@@ -139,6 +174,14 @@ export default function InvestigationDetailPage() {
     );
 
     subheading("T — Trigger the Issue");
+    labelValue(
+      "Stage Owner",
+      techLabel(
+        investigation.trigger.owner.techId,
+        investigation.trigger.owner.techName,
+        "No trigger owner assigned yet."
+      )
+    );
     labelValue(
       "Steps to Reproduce",
       investigation.trigger.stepsToReproduce,
@@ -157,6 +200,14 @@ export default function InvestigationDetailPage() {
 
     subheading("R — Reduce the Scope");
     labelValue(
+      "Stage Owner",
+      techLabel(
+        investigation.reduce.owner.techId,
+        investigation.reduce.owner.techName,
+        "No reduce owner assigned yet."
+      )
+    );
+    labelValue(
       "Suspected Layer",
       investigation.reduce.suspectedLayer,
       "Suspected layer has not been identified yet."
@@ -168,6 +219,14 @@ export default function InvestigationDetailPage() {
     );
 
     subheading("A — Analyze the Signals");
+    labelValue(
+      "Stage Owner",
+      techLabel(
+        investigation.analyze.owner.techId,
+        investigation.analyze.owner.techName,
+        "No analyze owner assigned yet."
+      )
+    );
     labelValue(
       "Logs",
       investigation.analyze.logs,
@@ -186,6 +245,14 @@ export default function InvestigationDetailPage() {
 
     subheading("C — Challenge Assumptions");
     labelValue(
+      "Stage Owner",
+      techLabel(
+        investigation.challenge.owner.techId,
+        investigation.challenge.owner.techName,
+        "No challenge owner assigned yet."
+      )
+    );
+    labelValue(
       "Hypotheses",
       investigation.challenge.hypotheses,
       "No hypotheses have been recorded yet."
@@ -202,6 +269,14 @@ export default function InvestigationDetailPage() {
     );
 
     subheading("E — Eliminate the Root Cause");
+    labelValue(
+      "Stage Owner",
+      techLabel(
+        investigation.eliminate.owner.techId,
+        investigation.eliminate.owner.techName,
+        "No eliminate owner assigned yet."
+      )
+    );
     labelValue(
       "Root Cause",
       investigation.eliminate.rootCause,
@@ -277,6 +352,22 @@ export default function InvestigationDetailPage() {
         <div className="meta-row">
           <span>Layer: {investigation.layer}</span>
           <span>Environment: {investigation.environment}</span>
+          <span>
+            Reported By:{" "}
+            {techLabel(
+              investigation.reportedBy.techId,
+              investigation.reportedBy.techName,
+              "Not assigned"
+            )}
+          </span>
+          <span>
+            Opened By:{" "}
+            {techLabel(
+              investigation.openedBy.techId,
+              investigation.openedBy.techName,
+              "Not assigned"
+            )}
+          </span>
           <span>Created: {formatDateTime(investigation.createdAt)}</span>
           <span>Updated: {formatDateTime(investigation.updatedAt)}</span>
           <span>
@@ -301,6 +392,16 @@ export default function InvestigationDetailPage() {
         subtitle="How the bug was reproduced."
       >
         <div className="detail-grid">
+          <div>
+            <h4>Stage Owner</h4>
+            <p>
+              {techLabel(
+                investigation.trigger.owner.techId,
+                investigation.trigger.owner.techName,
+                "No trigger owner assigned yet."
+              )}
+            </p>
+          </div>
           <div>
             <h4>Steps to Reproduce</h4>
             <p>
@@ -337,6 +438,16 @@ export default function InvestigationDetailPage() {
       >
         <div className="detail-grid">
           <div>
+            <h4>Stage Owner</h4>
+            <p>
+              {techLabel(
+                investigation.reduce.owner.techId,
+                investigation.reduce.owner.techName,
+                "No reduce owner assigned yet."
+              )}
+            </p>
+          </div>
+          <div>
             <h4>Suspected Layer</h4>
             <p>
               {emptyText(
@@ -362,6 +473,16 @@ export default function InvestigationDetailPage() {
         subtitle="Logs, telemetry, and error evidence."
       >
         <div className="detail-grid">
+          <div>
+            <h4>Stage Owner</h4>
+            <p>
+              {techLabel(
+                investigation.analyze.owner.techId,
+                investigation.analyze.owner.techName,
+                "No analyze owner assigned yet."
+              )}
+            </p>
+          </div>
           <div>
             <h4>Logs</h4>
             <p>
@@ -398,6 +519,16 @@ export default function InvestigationDetailPage() {
       >
         <div className="detail-grid">
           <div>
+            <h4>Stage Owner</h4>
+            <p>
+              {techLabel(
+                investigation.challenge.owner.techId,
+                investigation.challenge.owner.techName,
+                "No challenge owner assigned yet."
+              )}
+            </p>
+          </div>
+          <div>
             <h4>Hypotheses</h4>
             <p>
               {emptyText(
@@ -432,6 +563,16 @@ export default function InvestigationDetailPage() {
         subtitle="The fix and the prevention layer."
       >
         <div className="detail-grid">
+          <div>
+            <h4>Stage Owner</h4>
+            <p>
+              {techLabel(
+                investigation.eliminate.owner.techId,
+                investigation.eliminate.owner.techName,
+                "No eliminate owner assigned yet."
+              )}
+            </p>
+          </div>
           <div>
             <h4>Root Cause</h4>
             <p>

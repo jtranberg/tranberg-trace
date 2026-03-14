@@ -48,11 +48,11 @@ export type TraceInvestigation = {
   };
 
   analyze: {
-    owner: TechReference;
-    logs: string;
-    telemetry: string;
-    observedErrors: string;
-  };
+  owner: TechReference;
+  logs: string;
+  telemetry: string;
+  observedErrors: string;
+};
 
   challenge: {
     owner: TechReference;

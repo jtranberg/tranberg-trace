@@ -23,6 +23,13 @@ export type TechReference = {
 
 export type TraceInvestigation = {
   id: string;
+
+  tenantId: string;
+  tenantName: string;
+
+  projectId: string;
+  projectName: string;
+
   title: string;
   description: string;
   status: InvestigationStatus;
@@ -48,11 +55,11 @@ export type TraceInvestigation = {
   };
 
   analyze: {
-  owner: TechReference;
-  logs: string;
-  telemetry: string;
-  observedErrors: string;
-};
+    owner: TechReference;
+    logs: string;
+    telemetry: string;
+    observedErrors: string;
+  };
 
   challenge: {
     owner: TechReference;

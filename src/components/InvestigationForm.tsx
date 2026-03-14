@@ -92,6 +92,26 @@ export default function InvestigationForm({
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (!form.tenantName.trim()) {
+  alert("Please enter a company name.");
+  return;
+}
+
+if (!form.tenantId.trim()) {
+  alert("Please enter a company id.");
+  return;
+}
+
+if (!form.projectName.trim()) {
+  alert("Please enter a project name.");
+  return;
+}
+
+if (!form.projectId.trim()) {
+  alert("Please enter a project id.");
+  return;
+}
+
     if (!form.title.trim()) {
       alert("Please enter an investigation title.");
       return;
@@ -131,6 +151,45 @@ export default function InvestigationForm({
               onChange={(e) => updateField("description", e.target.value)}
             />
           </label>
+          <label className="field">
+  <span>Company Name</span>
+  <input
+    type="text"
+    placeholder="Example: App Intelligence"
+    value={form.tenantName}
+    onChange={(e) => updateField("tenantName", e.target.value)}
+  />
+</label>
+
+<label className="field">
+  <span>Company ID</span>
+  <input
+    type="text"
+    placeholder="Example: tenant-app-intelligence"
+    value={form.tenantId}
+    onChange={(e) => updateField("tenantId", e.target.value)}
+  />
+</label>
+
+<label className="field">
+  <span>Project Name</span>
+  <input
+    type="text"
+    placeholder="Example: Trace Platform"
+    value={form.projectName}
+    onChange={(e) => updateField("projectName", e.target.value)}
+  />
+</label>
+
+<label className="field">
+  <span>Project ID</span>
+  <input
+    type="text"
+    placeholder="Example: trace-platform"
+    value={form.projectId}
+    onChange={(e) => updateField("projectId", e.target.value)}
+  />
+</label>
 
           <label className="field">
             <span>Status</span>

@@ -12,12 +12,18 @@ function emptyTech() {
 }
 
 function normalizeInvestigation(
-  raw: Partial<TraceInvestigation> & { _id?: string }
+  raw: Partial<TraceInvestigation> & { _id?: string },
 ): TraceInvestigation {
   const now = new Date().toISOString();
 
   return {
     id: raw.id ?? raw._id ?? crypto.randomUUID(),
+
+    tenantId: raw.tenantId ?? "",
+    tenantName: raw.tenantName ?? "",
+    projectId: raw.projectId ?? "",
+    projectName: raw.projectName ?? "",
+
     title: raw.title ?? "",
     description: raw.description ?? "",
     status: raw.status ?? "open",
@@ -75,6 +81,11 @@ function toApiPayload(item: TraceInvestigation) {
     environment: item.environment,
     tags: item.tags,
 
+    tenantId: item.tenantId,
+    tenantName: item.tenantName,
+    projectId: item.projectId,
+    projectName: item.projectName,
+
     reportedBy: item.reportedBy,
     openedBy: item.openedBy,
 
@@ -98,7 +109,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   if (!response.ok) {
     const text = await response.text();
     throw new Error(
-      `API request failed (${response.status}): ${text || response.statusText}`
+      `API request failed (${response.status}): ${text || response.statusText}`,
     );
   }
 
@@ -107,9 +118,9 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 
 export async function loadInvestigations(): Promise<TraceInvestigation[]> {
   try {
-    const data = await apiFetch<Array<Partial<TraceInvestigation> & { _id?: string }>>(
-      "/api/investigations"
-    );
+    const data = await apiFetch<
+      Array<Partial<TraceInvestigation> & { _id?: string }>
+    >("/api/investigations");
     return data.map(normalizeInvestigation);
   } catch (error) {
     console.error("Failed to load investigations from API:", error);
@@ -118,11 +129,11 @@ export async function loadInvestigations(): Promise<TraceInvestigation[]> {
 }
 
 export async function getInvestigationById(
-  id: string
+  id: string,
 ): Promise<TraceInvestigation | undefined> {
   try {
     const data = await apiFetch<Partial<TraceInvestigation> & { _id?: string }>(
-      `/api/investigations/${id}`
+      `/api/investigations/${id}`,
     );
     return normalizeInvestigation(data);
   } catch (error) {
@@ -132,28 +143,28 @@ export async function getInvestigationById(
 }
 
 export async function createInvestigation(
-  item: TraceInvestigation
+  item: TraceInvestigation,
 ): Promise<TraceInvestigation> {
   const data = await apiFetch<Partial<TraceInvestigation> & { _id?: string }>(
     "/api/investigations",
     {
       method: "POST",
       body: JSON.stringify(toApiPayload(item)),
-    }
+    },
   );
 
   return normalizeInvestigation(data);
 }
 
 export async function updateInvestigation(
-  updated: TraceInvestigation
+  updated: TraceInvestigation,
 ): Promise<TraceInvestigation> {
   const data = await apiFetch<Partial<TraceInvestigation> & { _id?: string }>(
     `/api/investigations/${updated.id}`,
     {
       method: "PUT",
       body: JSON.stringify(toApiPayload(updated)),
-    }
+    },
   );
 
   return normalizeInvestigation(data);
@@ -170,6 +181,11 @@ export function createEmptyInvestigation(): TraceInvestigation {
 
   return {
     id: crypto.randomUUID(),
+    tenantId: "",
+    tenantName: "",
+    projectId: "",
+    projectName: "",
+
     title: "",
     description: "",
     status: "open",
@@ -233,7 +249,7 @@ export function formatDateTime(value: string): string {
 
 export function getDurationMinutes(
   createdAt: string,
-  updatedAt: string
+  updatedAt: string,
 ): number | null {
   const start = new Date(createdAt).getTime();
   const end = new Date(updatedAt).getTime();
@@ -243,10 +259,7 @@ export function getDurationMinutes(
   return Math.max(0, Math.round((end - start) / 1000 / 60));
 }
 
-export function getDurationLabel(
-  createdAt: string,
-  updatedAt: string
-): string {
+export function getDurationLabel(createdAt: string, updatedAt: string): string {
   const start = new Date(createdAt).getTime();
   const end = new Date(updatedAt).getTime();
 

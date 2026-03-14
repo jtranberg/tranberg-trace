@@ -60,6 +60,29 @@ const EliminateSchema = new mongoose.Schema(
 
 const InvestigationSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: String,
+      required: true,
+      index: true,
+      trim: true,
+    },
+    tenantName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    projectId: {
+      type: String,
+      required: true,
+      index: true,
+      trim: true,
+    },
+    projectName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
     title: { type: String, required: true, trim: true },
     description: { type: String, default: "" },
 
@@ -105,5 +128,7 @@ const InvestigationSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+InvestigationSchema.index({ tenantId: 1, projectId: 1, updatedAt: -1 });
 
 export default mongoose.model("Investigation", InvestigationSchema);

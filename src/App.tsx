@@ -33,7 +33,7 @@ function toggleTheme() {
   {theme === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode"}
 </button>
         <div>
-          <h1>TRANBERG TRACE</h1>
+          <h1>TRANBERG T.R.A.C.E.</h1>
           <p>Debug with structure instead of guesswork.</p>
         </div>
 

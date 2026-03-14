@@ -1,6 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import InvestigationForm from "../components/InvestigationForm";
-import { createEmptyInvestigation, createInvestigation } from "../utils/storage";
+import {
+  createEmptyInvestigation,
+  createInvestigation,
+} from "../utils/storage";
 
 export default function NewInvestigationPage() {
   const navigate = useNavigate();
@@ -20,9 +23,9 @@ export default function NewInvestigationPage() {
       <InvestigationForm
         initialValue={initialValue}
         submitLabel="Save Investigation"
-        onSubmit={(value) => {
-          createInvestigation(value);
-          navigate(`/investigation/${value.id}`);
+        onSubmit={async (value) => {
+          const created = await createInvestigation(value);
+          navigate(`/investigation/${created.id}`);
         }}
       />
     </section>

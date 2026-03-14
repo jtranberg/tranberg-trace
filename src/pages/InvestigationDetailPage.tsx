@@ -396,6 +396,7 @@ export default function InvestigationDetailPage() {
         </div>
 
         <div className="meta-row">
+          
           <span>Layer: {current.layer}</span>
           <span>Environment: {current.environment}</span>
           <span>

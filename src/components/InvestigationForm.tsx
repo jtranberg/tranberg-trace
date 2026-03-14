@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import TraceSectionCard from "./TraceSectionCard";
 import type { TraceInvestigation } from "../types/trace";
+import {
+  loadProjects,
+  loadTenants,
+  type ProjectOption,
+  type TenantOption,
+} from "../utils/storage";
 
 type InvestigationFormProps = {
   initialValue: TraceInvestigation;
@@ -14,10 +20,74 @@ export default function InvestigationForm({
   onSubmit,
 }: InvestigationFormProps) {
   const [form, setForm] = useState<TraceInvestigation>(initialValue);
+  const [tenants, setTenants] = useState<TenantOption[]>([]);
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
+  const [loadingTenants, setLoadingTenants] = useState(true);
+  const [loadingProjects, setLoadingProjects] = useState(false);
 
   useEffect(() => {
     setForm(initialValue);
   }, [initialValue]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchTenants() {
+      try {
+        const data = await loadTenants();
+        if (isMounted) {
+          setTenants(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch tenants:", error);
+      } finally {
+        if (isMounted) {
+          setLoadingTenants(false);
+        }
+      }
+    }
+
+    fetchTenants();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchProjects() {
+      if (!form.tenantId) {
+        setProjects([]);
+        return;
+      }
+
+      try {
+        setLoadingProjects(true);
+        const data = await loadProjects(form.tenantId);
+
+        if (isMounted) {
+          setProjects(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch projects:", error);
+        if (isMounted) {
+          setProjects([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingProjects(false);
+        }
+      }
+    }
+
+    fetchProjects();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [form.tenantId]);
 
   function updateField<K extends keyof TraceInvestigation>(
     key: K,
@@ -89,28 +159,42 @@ export default function InvestigationForm({
     updateField("tags", tags);
   }
 
+  function handleTenantSelect(tenantId: string) {
+    const selectedTenant = tenants.find((tenant) => tenant._id === tenantId);
+
+    setForm((prev: TraceInvestigation) => ({
+      ...prev,
+      tenantId: selectedTenant?._id ?? "",
+      tenantName: selectedTenant?.name ?? "",
+      projectId: "",
+      projectName: "",
+      updatedAt: new Date().toISOString(),
+    }));
+  }
+
+  function handleProjectSelect(projectId: string) {
+    const selectedProject = projects.find((project) => project._id === projectId);
+
+    setForm((prev: TraceInvestigation) => ({
+      ...prev,
+      projectId: selectedProject?._id ?? "",
+      projectName: selectedProject?.name ?? "",
+      updatedAt: new Date().toISOString(),
+    }));
+  }
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!form.tenantName.trim()) {
-  alert("Please enter a company name.");
-  return;
-}
+    if (!form.tenantId.trim()) {
+      alert("Please select a company.");
+      return;
+    }
 
-if (!form.tenantId.trim()) {
-  alert("Please enter a company id.");
-  return;
-}
-
-if (!form.projectName.trim()) {
-  alert("Please enter a project name.");
-  return;
-}
-
-if (!form.projectId.trim()) {
-  alert("Please enter a project id.");
-  return;
-}
+    if (!form.projectId.trim()) {
+      alert("Please select a project.");
+      return;
+    }
 
     if (!form.title.trim()) {
       alert("Please enter an investigation title.");
@@ -151,52 +235,66 @@ if (!form.projectId.trim()) {
               onChange={(e) => updateField("description", e.target.value)}
             />
           </label>
+
           <label className="field">
-  <span>Company Name</span>
-  <input
-    type="text"
-    placeholder="Example: App Intelligence"
-    value={form.tenantName}
-    onChange={(e) => updateField("tenantName", e.target.value)}
-  />
-</label>
+            <span>Company</span>
+            <select
+              value={form.tenantId}
+              onChange={(e) => handleTenantSelect(e.target.value)}
+              disabled={loadingTenants}
+            >
+              <option value="">
+                {loadingTenants ? "Loading companies..." : "Select a company"}
+              </option>
+              {tenants.map((tenant) => (
+                <option key={tenant._id} value={tenant._id}>
+                  {tenant.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-<label className="field">
-  <span>Company ID</span>
-  <input
-    type="text"
-    placeholder="Example: tenant-app-intelligence"
-    value={form.tenantId}
-    onChange={(e) => updateField("tenantId", e.target.value)}
-  />
-</label>
+          <label className="field">
+            <span>Project</span>
+            <select
+              value={form.projectId}
+              onChange={(e) => handleProjectSelect(e.target.value)}
+              disabled={!form.tenantId || loadingProjects}
+            >
+              <option value="">
+                {!form.tenantId
+                  ? "Select a company first"
+                  : loadingProjects
+                  ? "Loading projects..."
+                  : "Select a project"}
+              </option>
+              {projects.map((project) => (
+                <option key={project._id} value={project._id}>
+                  {project.name} ({project.key})
+                </option>
+              ))}
+            </select>
+          </label>
 
-<label className="field">
-  <span>Project Name</span>
-  <input
-    type="text"
-    placeholder="Example: Trace Platform"
-    value={form.projectName}
-    onChange={(e) => updateField("projectName", e.target.value)}
-  />
-</label>
+          <label className="field">
+            <span>Company ID</span>
+            <input type="text" value={form.tenantId} readOnly />
+          </label>
 
-<label className="field">
-  <span>Project ID</span>
-  <input
-    type="text"
-    placeholder="Example: trace-platform"
-    value={form.projectId}
-    onChange={(e) => updateField("projectId", e.target.value)}
-  />
-</label>
+          <label className="field">
+            <span>Project ID</span>
+            <input type="text" value={form.projectId} readOnly />
+          </label>
 
           <label className="field">
             <span>Status</span>
             <select
               value={form.status}
               onChange={(e) =>
-                updateField("status", e.target.value as TraceInvestigation["status"])
+                updateField(
+                  "status",
+                  e.target.value as TraceInvestigation["status"]
+                )
               }
             >
               <option value="open">Open</option>
@@ -229,7 +327,10 @@ if (!form.projectId.trim()) {
             <select
               value={form.layer}
               onChange={(e) =>
-                updateField("layer", e.target.value as TraceInvestigation["layer"])
+                updateField(
+                  "layer",
+                  e.target.value as TraceInvestigation["layer"]
+                )
               }
             >
               <option value="unknown">Unknown</option>

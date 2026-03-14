@@ -11,6 +11,25 @@ function emptyTech() {
   };
 }
 
+export type TenantOption = {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  isActive?: boolean;
+};
+
+export type ProjectOption = {
+  _id: string;
+  tenantId: string;
+  tenantName: string;
+  name: string;
+  slug: string;
+  key: string;
+  description?: string;
+  isActive?: boolean;
+};
+
 function normalizeInvestigation(
   raw: Partial<TraceInvestigation> & { _id?: string },
 ): TraceInvestigation {
@@ -124,6 +143,30 @@ export async function loadInvestigations(): Promise<TraceInvestigation[]> {
     return data.map(normalizeInvestigation);
   } catch (error) {
     console.error("Failed to load investigations from API:", error);
+    return [];
+  }
+}
+
+export async function loadTenants(): Promise<TenantOption[]> {
+  try {
+    return await apiFetch<TenantOption[]>("/api/tenants");
+  } catch (error) {
+    console.error("Failed to load tenants from API:", error);
+    return [];
+  }
+}
+
+export async function loadProjects(
+  tenantId?: string,
+): Promise<ProjectOption[]> {
+  try {
+    const query = tenantId
+      ? `/api/projects?tenantId=${encodeURIComponent(tenantId)}`
+      : "/api/projects";
+
+    return await apiFetch<ProjectOption[]>(query);
+  } catch (error) {
+    console.error("Failed to load projects from API:", error);
     return [];
   }
 }

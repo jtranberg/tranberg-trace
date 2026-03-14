@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 import investigationsRouter from "./routes/Investigations.js";
+import tenantsRouter from "./routes/tenants.js";
+import projectsRouter from "./routes/projects.js";
 
 
 dotenv.config({ quiet: true });
@@ -29,6 +31,8 @@ app.get("/api/ping", (_req, res) => {
 });
 
 app.use("/api/investigations", investigationsRouter);
+app.use("/api/tenants", tenantsRouter);
+app.use("/api/projects", projectsRouter);
 
 const PORT = process.env.PORT || 5000;
 

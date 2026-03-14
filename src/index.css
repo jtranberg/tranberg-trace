@@ -41,7 +41,7 @@ body.theme-light {
   --bg-gradient-bottom: #e8edf5;
 
   --card: rgba(255, 255, 255, 0.92);
-  --card-soft: rgba(248, 250, 252, 0.98);
+  --card-soft: rgba(155, 195, 235, 0.98);
   --card-muted: rgba(255, 255, 255, 0.88);
   --card-border: rgba(24, 32, 43, 0.12);
 
@@ -622,7 +622,7 @@ textarea {
 
 /* CRITICAL */
 .severity-card-critical {
-  background: linear-gradient(180deg, rgba(239, 68, 68, 0.08), rgba(15, 21, 40, 0.9));
+  background: linear-gradient(180deg, rgba(233, 14, 14, 0.123), rgba(185, 41, 37, 0.411));
   border-color: rgba(239, 68, 68, 0.24);
   box-shadow: 0 16px 38px rgba(239, 68, 68, 0.08);
 }

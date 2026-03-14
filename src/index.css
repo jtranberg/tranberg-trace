@@ -466,3 +466,93 @@ textarea {
     flex: 1;
   }
 }
+
+/* Severity hero styling */
+
+.page-hero {
+  transition: all 0.3s ease;
+}
+
+/* LOW */
+
+.severity-hero-low {
+  border-left: 4px solid #22c55e;
+  background: linear-gradient(180deg, rgba(34,197,94,0.06), transparent);
+}
+
+/* MEDIUM */
+
+.severity-hero-medium {
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(180deg, rgba(245,158,11,0.06), transparent);
+}
+
+/* HIGH */
+
+.severity-hero-high {
+  border-left: 4px solid #f97316;
+  background: linear-gradient(180deg, rgba(249,115,22,0.06), transparent);
+}
+
+/* CRITICAL */
+
+
+.severity-hero-critical {
+  border-left: 4px solid #ef4444;
+  background: linear-gradient(180deg, rgba(239,68,68,0.08), transparent);
+  box-shadow: 0 12px 30px rgba(239,68,68,0.12);
+}
+.investigation-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.investigation-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 20px 0 0 20px;
+}
+
+/* LOW */
+.severity-card-low {
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.05), rgba(15, 21, 40, 0.88));
+  border-color: rgba(34, 197, 94, 0.18);
+}
+
+.severity-card-low::before {
+  background: #22c55e;
+}
+
+/* MEDIUM */
+.severity-card-medium {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.06), rgba(15, 21, 40, 0.88));
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.severity-card-medium::before {
+  background: #f59e0b;
+}
+
+/* HIGH */
+.severity-card-high {
+  background: linear-gradient(180deg, rgba(249, 115, 22, 0.07), rgba(15, 21, 40, 0.88));
+  border-color: rgba(249, 115, 22, 0.22);
+}
+
+.severity-card-high::before {
+  background: #f97316;
+}
+
+/* CRITICAL */
+.severity-card-critical {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.08), rgba(15, 21, 40, 0.9));
+  border-color: rgba(239, 68, 68, 0.24);
+  box-shadow: 0 16px 38px rgba(239, 68, 68, 0.08);
+}
+
+.severity-card-critical::before {
+  background: #ef4444;
+}

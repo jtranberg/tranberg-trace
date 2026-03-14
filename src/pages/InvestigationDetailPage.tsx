@@ -32,6 +32,10 @@ export default function InvestigationDetailPage() {
     investigation.updatedAt
   );
 
+  function emptyText(value: string, fallback: string) {
+    return value.trim() ? value : fallback;
+  }
+
   function handleDelete() {
     const confirmed = window.confirm(
       "Delete this investigation? This action cannot be undone."
@@ -51,7 +55,7 @@ export default function InvestigationDetailPage() {
     maxWidth: number,
     lineHeight = 7
   ) {
-    const lines = doc.splitTextToSize(text || "—", maxWidth);
+    const lines = doc.splitTextToSize(text.trim() ? text : "Not documented yet.", maxWidth);
     doc.text(lines, x, y);
     return y + lines.length * lineHeight;
   }
@@ -90,7 +94,7 @@ export default function InvestigationDetailPage() {
       y += 8;
     }
 
-    function labelValue(label: string, value: string) {
+    function labelValue(label: string, value: string, fallback = "Not documented yet.") {
       ensureSpace(18);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
@@ -99,7 +103,7 @@ export default function InvestigationDetailPage() {
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      y = addWrappedText(doc, value || "—", margin, y, maxWidth);
+      y = addWrappedText(doc, value.trim() ? value : fallback, margin, y, maxWidth);
       y += blockGap;
     }
 
@@ -114,7 +118,7 @@ export default function InvestigationDetailPage() {
     doc.setFontSize(10);
     y = addWrappedText(
       doc,
-      investigation.description || "No summary was added.",
+      emptyText(investigation.description, "No summary has been added yet."),
       margin,
       y,
       maxWidth
@@ -126,7 +130,7 @@ export default function InvestigationDetailPage() {
     labelValue("Severity", investigation.severity);
     labelValue("Layer", investigation.layer);
     labelValue("Environment", investigation.environment);
-    labelValue("Tags", investigation.tags.join(", ") || "—");
+    labelValue("Tags", investigation.tags.join(", "), "No tags added.");
     labelValue("Created", formatDateTime(investigation.createdAt));
     labelValue("Last Updated", formatDateTime(investigation.updatedAt));
     labelValue(
@@ -135,29 +139,89 @@ export default function InvestigationDetailPage() {
     );
 
     subheading("T — Trigger the Issue");
-    labelValue("Steps to Reproduce", investigation.trigger.stepsToReproduce);
-    labelValue("Expected Behavior", investigation.trigger.expectedBehavior);
-    labelValue("Actual Behavior", investigation.trigger.actualBehavior);
+    labelValue(
+      "Steps to Reproduce",
+      investigation.trigger.stepsToReproduce,
+      "Reproduction steps have not been documented yet."
+    );
+    labelValue(
+      "Expected Behavior",
+      investigation.trigger.expectedBehavior,
+      "Expected behavior has not been recorded yet."
+    );
+    labelValue(
+      "Actual Behavior",
+      investigation.trigger.actualBehavior,
+      "Actual behavior has not been recorded yet."
+    );
 
     subheading("R — Reduce the Scope");
-    labelValue("Suspected Layer", investigation.reduce.suspectedLayer);
-    labelValue("Scope Notes", investigation.reduce.scopeNotes);
+    labelValue(
+      "Suspected Layer",
+      investigation.reduce.suspectedLayer,
+      "Suspected layer has not been identified yet."
+    );
+    labelValue(
+      "Scope Notes",
+      investigation.reduce.scopeNotes,
+      "Scope notes have not been recorded yet."
+    );
 
     subheading("A — Analyze the Signals");
-    labelValue("Logs", investigation.analyze.logs);
-    labelValue("Telemetry", investigation.analyze.telemetry);
-    labelValue("Error Messages", investigation.analyze.errors);
+    labelValue(
+      "Logs",
+      investigation.analyze.logs,
+      "Logs have not been captured yet."
+    );
+    labelValue(
+      "Telemetry",
+      investigation.analyze.telemetry,
+      "Telemetry has not been captured yet."
+    );
+    labelValue(
+      "Error Messages",
+      investigation.analyze.errors,
+      "Error messages have not been recorded yet."
+    );
 
     subheading("C — Challenge Assumptions");
-    labelValue("Hypotheses", investigation.challenge.hypotheses);
-    labelValue("Experiments", investigation.challenge.experiments);
-    labelValue("Findings", investigation.challenge.findings);
+    labelValue(
+      "Hypotheses",
+      investigation.challenge.hypotheses,
+      "No hypotheses have been recorded yet."
+    );
+    labelValue(
+      "Experiments",
+      investigation.challenge.experiments,
+      "No experiments have been recorded yet."
+    );
+    labelValue(
+      "Findings",
+      investigation.challenge.findings,
+      "No findings have been documented yet."
+    );
 
     subheading("E — Eliminate the Root Cause");
-    labelValue("Root Cause", investigation.eliminate.rootCause);
-    labelValue("Fix Applied", investigation.eliminate.fixApplied);
-    labelValue("Safeguards", investigation.eliminate.safeguards);
-    labelValue("Follow-up", investigation.eliminate.followUp);
+    labelValue(
+      "Root Cause",
+      investigation.eliminate.rootCause,
+      "Root cause has not been identified yet."
+    );
+    labelValue(
+      "Fix Applied",
+      investigation.eliminate.fixApplied,
+      "Fix applied has not been recorded yet."
+    );
+    labelValue(
+      "Safeguards",
+      investigation.eliminate.safeguards,
+      "Safeguards have not been documented yet."
+    );
+    labelValue(
+      "Follow-up",
+      investigation.eliminate.followUp,
+      "No follow-up actions have been recorded yet."
+    );
 
     const safeTitle = investigation.title
       .toLowerCase()
@@ -169,7 +233,7 @@ export default function InvestigationDetailPage() {
 
   return (
     <section className="page-stack">
-      <div className="page-hero">
+      <div className={`page-hero severity-hero-${investigation.severity}`}>
         <div className="detail-header-row">
           <div>
             <div className="card-topline">
@@ -182,7 +246,12 @@ export default function InvestigationDetailPage() {
             </div>
 
             <h2>{investigation.title}</h2>
-            <p>{investigation.description || "No summary was added."}</p>
+            <p>
+              {emptyText(
+                investigation.description,
+                "No summary has been added yet."
+              )}
+            </p>
           </div>
 
           <div className="action-row">
@@ -234,15 +303,30 @@ export default function InvestigationDetailPage() {
         <div className="detail-grid">
           <div>
             <h4>Steps to Reproduce</h4>
-            <p>{investigation.trigger.stepsToReproduce || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.trigger.stepsToReproduce,
+                "Reproduction steps have not been documented yet."
+              )}
+            </p>
           </div>
           <div>
             <h4>Expected Behavior</h4>
-            <p>{investigation.trigger.expectedBehavior || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.trigger.expectedBehavior,
+                "Expected behavior has not been recorded yet."
+              )}
+            </p>
           </div>
           <div>
             <h4>Actual Behavior</h4>
-            <p>{investigation.trigger.actualBehavior || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.trigger.actualBehavior,
+                "Actual behavior has not been recorded yet."
+              )}
+            </p>
           </div>
         </div>
       </TraceSectionCard>
@@ -254,11 +338,21 @@ export default function InvestigationDetailPage() {
         <div className="detail-grid">
           <div>
             <h4>Suspected Layer</h4>
-            <p>{investigation.reduce.suspectedLayer || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.reduce.suspectedLayer,
+                "Suspected layer has not been identified yet."
+              )}
+            </p>
           </div>
           <div>
             <h4>Scope Notes</h4>
-            <p>{investigation.reduce.scopeNotes || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.reduce.scopeNotes,
+                "Scope notes have not been recorded yet."
+              )}
+            </p>
           </div>
         </div>
       </TraceSectionCard>
@@ -270,15 +364,30 @@ export default function InvestigationDetailPage() {
         <div className="detail-grid">
           <div>
             <h4>Logs</h4>
-            <p>{investigation.analyze.logs || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.analyze.logs,
+                "Logs have not been captured yet."
+              )}
+            </p>
           </div>
           <div>
             <h4>Telemetry</h4>
-            <p>{investigation.analyze.telemetry || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.analyze.telemetry,
+                "Telemetry has not been captured yet."
+              )}
+            </p>
           </div>
           <div>
             <h4>Error Messages</h4>
-            <p>{investigation.analyze.errors || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.analyze.errors,
+                "Error messages have not been recorded yet."
+              )}
+            </p>
           </div>
         </div>
       </TraceSectionCard>
@@ -290,15 +399,30 @@ export default function InvestigationDetailPage() {
         <div className="detail-grid">
           <div>
             <h4>Hypotheses</h4>
-            <p>{investigation.challenge.hypotheses || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.challenge.hypotheses,
+                "No hypotheses have been recorded yet."
+              )}
+            </p>
           </div>
           <div>
             <h4>Experiments</h4>
-            <p>{investigation.challenge.experiments || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.challenge.experiments,
+                "No experiments have been recorded yet."
+              )}
+            </p>
           </div>
           <div>
             <h4>Findings</h4>
-            <p>{investigation.challenge.findings || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.challenge.findings,
+                "No findings have been documented yet."
+              )}
+            </p>
           </div>
         </div>
       </TraceSectionCard>
@@ -310,19 +434,39 @@ export default function InvestigationDetailPage() {
         <div className="detail-grid">
           <div>
             <h4>Root Cause</h4>
-            <p>{investigation.eliminate.rootCause || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.eliminate.rootCause,
+                "Root cause has not been identified yet."
+              )}
+            </p>
           </div>
           <div>
             <h4>Fix Applied</h4>
-            <p>{investigation.eliminate.fixApplied || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.eliminate.fixApplied,
+                "Fix applied has not been recorded yet."
+              )}
+            </p>
           </div>
           <div>
             <h4>Safeguards</h4>
-            <p>{investigation.eliminate.safeguards || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.eliminate.safeguards,
+                "Safeguards have not been documented yet."
+              )}
+            </p>
           </div>
           <div>
             <h4>Follow-up</h4>
-            <p>{investigation.eliminate.followUp || "—"}</p>
+            <p>
+              {emptyText(
+                investigation.eliminate.followUp,
+                "No follow-up actions have been recorded yet."
+              )}
+            </p>
           </div>
         </div>
       </TraceSectionCard>

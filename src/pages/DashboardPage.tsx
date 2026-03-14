@@ -1,6 +1,10 @@
 import { Link } from "react-router-dom";
 import { loadInvestigations } from "../utils/storage";
 
+function emptyText(value: string, fallback: string) {
+  return value.trim() ? value : fallback;
+}
+
 export default function DashboardPage() {
   const investigations = loadInvestigations();
 
@@ -37,7 +41,7 @@ export default function DashboardPage() {
             <Link
               key={item.id}
               to={`/investigation/${item.id}`}
-              className="investigation-card"
+              className={`investigation-card severity-card-${item.severity}`}
             >
               <div className="card-topline">
                 <span className={`badge status-${item.status}`}>
@@ -49,20 +53,27 @@ export default function DashboardPage() {
               </div>
 
               <h3>{item.title}</h3>
-              <p>{item.description || "No description provided yet."}</p>
+              <p>
+                {emptyText(
+                  item.description,
+                  "No description has been added yet."
+                )}
+              </p>
 
               <div className="meta-row">
                 <span>{item.layer}</span>
                 <span>{item.environment}</span>
               </div>
 
-              <div className="tag-row">
-                {item.tags.slice(0, 4).map((tag) => (
-                  <span key={tag} className="tag-pill">
-                    {tag}
-                  </span>
-                ))}
-              </div>
+              {item.tags.length > 0 && (
+                <div className="tag-row">
+                  {item.tags.slice(0, 4).map((tag: string) => (
+                    <span key={tag} className="tag-pill">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </Link>
           ))}
         </div>
